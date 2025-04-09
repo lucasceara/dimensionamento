@@ -79,6 +79,24 @@ def calcular_cp(faixa_centro, weq, pos_pneus, wander_std):
          stats.norm.cdf(faixa_centro - weq/2, pneu_pos, wander_std))
         for pneu_pos in pos_pneus
     ])
+def obter_pc_por_faixa(aeronave_nome, h_total, dados_aeronaves, wander_std=77.3):
+    faixa_largura = 25.4
+    num_faixas = 81
+    faixas = np.linspace(-40 * faixa_largura, 40 * faixa_largura, num_faixas)
+    for aero in dados_aeronaves:
+        if aero['nome'] == aeronave_nome:
+            if aero['Ne'] == 1 or h_total >= aero['t'] - aero['w']:
+                weq = aero['w'] + aero['t'] + h_total if aero['Ne'] > 1 else aero['w'] + h_total
+                posicoes_pneus = [aero['xk_centro']]
+            else:
+                weq = aero['w'] + h_total
+                deslocamento = aero['t'] / 2
+                posicoes_pneus = [aero['xk_centro'] - deslocamento, aero['xk_centro'] + deslocamento]
+            posicoes_pneus_simetrico = posicoes_pneus + [-pos for pos in posicoes_pneus]
+            cp_values = np.array([calcular_cp(f, weq, posicoes_pneus_simetrico, wander_std) for f in faixas])
+            pc_values = 1 / cp_values
+            return faixas, pc_values
+    raise ValueError(f"Aeronave {aeronave_nome} não encontrada.")
 
 def obter_pc_por_faixa(aeronave_nome, h_total, dados_aeronaves, wander_std=77.3):
     faixa_largura = 25.4
