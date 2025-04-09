@@ -1,12 +1,11 @@
-# Imports iniciais
+# app.py - versão para Streamlit
+
+import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 import joblib
 from sklearn.preprocessing import MinMaxScaler
 from scipy import stats
-import ipywidgets as widgets
-from IPython.display import display, clear_output
 import itertools
 
 # === CARREGAR MODELO TREINADO ===
@@ -34,31 +33,12 @@ def prever_deformacao_customizada(valores):
     entrada_norm = scaler.transform(entrada)
     return neural_network(weights, entrada_norm)[0]
 
-# === AUSTROADS: Temperatura média anual ===
-def calcular_temperaturas(temp_media_anual):
-    return None, temp_media_anual
-
+# === TEMPERATURA ===
 def corrigir_mr_para_Tc(E25_mpa, temp_media_anual):
     return E25_mpa * np.exp(-0.08 * (temp_media_anual - 25))
 
-# === INTERFACE PARA CONFIABILIDADE ===
-covs_padrao = {
-    'revest_E': 15, 'base_E': 20, 'subbase_E': 20, 'subleito_E': 20,
-    'revest_h': 7, 'base_h': 12, 'subbase_h': 15
-}
-
-cov_widgets = {
-    key: widgets.FloatText(value=val, description=f'COV {key} (%)')
-    for key, val in covs_padrao.items()
-}
-
-nivel_confianca = widgets.FloatText(value=95.0, description='Confiabilidade (%)')
-
-confiab_section = widgets.VBox([
-    widgets.HTML('<b>Coeficientes de Variação (COV):</b>')
-] + list(cov_widgets.values()) + [nivel_confianca])
-
-def calcular_confiabilidade_rosenblueth(aeronave, media_inputs):
+# === CONFIABILIDADE ===
+def calcular_confiabilidade_rosenblueth(aeronave, media_inputs, cov_dict, confianca):
     indices = {
         'revest_E': 2, 'revest_h': 3,
         'base_E': 4, 'base_h': 5,
@@ -67,9 +47,7 @@ def calcular_confiabilidade_rosenblueth(aeronave, media_inputs):
     }
     variaveis = list(indices.items())
     mu_vector = media_inputs.copy()
-    cov_values = [cov_widgets[k].value / 100 for k, _ in variaveis]
-    
-    # Geração de todas as combinações +1/-1 (total 2^7 = 128)
+    cov_values = [cov_dict[k] / 100 for k, _ in variaveis]
     combinacoes = list(itertools.product([-1, 1], repeat=7))
     resultados = []
     for sinais in combinacoes:
@@ -78,14 +56,13 @@ def calcular_confiabilidade_rosenblueth(aeronave, media_inputs):
             v[idx] = mu_vector[idx] * (1 + sinais[i] * cov_values[i])
         f = prever_deformacao_customizada(v)
         resultados.append(f)
-
     media = np.mean(resultados)
     desvio = np.std(resultados)
-    z = stats.norm.ppf(nivel_confianca.value / 100)
+    z = stats.norm.ppf(confianca / 100)
     confiavel = media + z * desvio
     return media, confiavel
 
-# === CÁLCULO DE COBERTURAS ===
+# === COBERTURA ===
 def calcular_C(ev):
     if ev >= 1.765e-3:
         return (0.00414131 / ev) ** 8.1
@@ -122,11 +99,83 @@ def obter_pc_por_faixa(aeronave_nome, h_total, dados_aeronaves, wander_std=77.3)
             return faixas, pc_values
     raise ValueError(f"Aeronave {aeronave_nome} não encontrada.")
 
-# === DADOS DAS AERONAVES ===
-dados_aeronaves_completos = [
-    {'nome': 'A-320',   'w': 31.5,   't': 92.69, 'xk_centro': 333.15, 'Ne': 2},
-    {'nome': 'A-321',   'w': 32.240, 't': 92.71, 'xk_centro': 379.5,  'Ne': 2},
-    {'nome': 'B-737',   'w': 30.062, 't': 86.36, 'xk_centro': 285.75, 'Ne': 2},
-    {'nome': 'EMB-195', 'w': 27.194, 't': 86.36, 'xk_centro': 297.18, 'Ne': 2},
-    {'nome': 'ATR-72',  'w': 21.035, 't': 43.60, 'xk_centro': 205.0,  'Ne': 2},
-]
+# === APP STREAMLIT ===
+st.title("Análise de CDF Multiaeronaves com Confiabilidade")
+
+# Entradas do usuário
+temp_anual = st.number_input('Temperatura média anual (°C)', value=27.0)
+revest_E = st.number_input('MR 25°C (MPa)', value=2500.0)
+revest_h = st.number_input('h revest. (m)', value=0.3)
+base_E = st.number_input('E base (MPa)', value=300.0)
+base_h = st.number_input('h base (m)', value=0.3)
+subbase_E = st.number_input('E subbase (MPa)', value=150.0)
+subbase_h = st.number_input('h subbase (m)', value=0.4)
+subleito_E = st.number_input('E subleito (MPa)', value=60.0)
+vida_util = st.number_input('Vida útil (anos)', value=20)
+
+st.markdown("### Coeficientes de Variação (COV)")
+covs = {
+    'revest_E': st.number_input('COV revest_E (%)', value=15.0),
+    'revest_h': st.number_input('COV revest_h (%)', value=7.0),
+    'base_E': st.number_input('COV base_E (%)', value=20.0),
+    'base_h': st.number_input('COV base_h (%)', value=12.0),
+    'subbase_E': st.number_input('COV subbase_E (%)', value=20.0),
+    'subbase_h': st.number_input('COV subbase_h (%)', value=15.0),
+    'subleito_E': st.number_input('COV subleito_E (%)', value=20.0),
+}
+nivel_confianca = st.number_input('Nível de confiança (%)', value=95.0)
+
+# AERONAVES
+aeronave_selecionadas = {}
+st.markdown("### Dados de Aeronaves")
+for nome in sorted(aeronaves_dict.keys()):
+    col1, col2 = st.columns(2)
+    with col1:
+        dec = st.number_input(f'{nome} - a (decolagens)', min_value=0, value=0, key=f"a_{nome}")
+    with col2:
+        cres = st.number_input(f'{nome} - b (%) crescimento)', value=0.0, key=f"b_{nome}")
+    if dec > 0:
+        aeronave_selecionadas[nome] = (dec, cres)
+
+# BOTÃO EXECUTAR
+if st.button("Gerar gráfico CDF acumulado"):
+    faixas = np.linspace(-40 * 25.4, 40 * 25.4, 81)
+    cdf_total = np.zeros_like(faixas)
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    revest_E_corrigido = corrigir_mr_para_Tc(revest_E, temp_anual)
+    h_total_cm = (revest_h + base_h + subbase_h) * 100
+    fx_ref = None
+
+    for nome, (dec, cres) in aeronave_selecionadas.items():
+        entrada_original = [
+            aeronaves_dict[nome]['Pressão dos Pneus(MPa)'],
+            aeronaves_dict[nome]['dist_rodas(m)'],
+            revest_E, revest_h, base_E, base_h, subbase_E, subbase_h, subleito_E
+        ]
+        entrada_corrigida = entrada_original.copy()
+        entrada_corrigida[2] = revest_E_corrigido
+
+        ev_media, ev_confiavel = calcular_confiabilidade_rosenblueth(nome, entrada_corrigida, covs, nivel_confianca)
+
+        st.write(f"#### {nome}")
+        st.write(f"MR corrigido: {revest_E_corrigido:.2f} MPa")
+        st.write(f"Deformação confiável ({nivel_confianca:.0f}%): {ev_confiavel:.6f} mm/mm")
+
+        C = calcular_C(ev_confiavel)
+        N = calcular_N(dec, cres, vida_util)
+        fx, pc = obter_pc_por_faixa(nome, h_total_cm, dados_aeronaves_completos)
+        if fx_ref is None:
+            fx_ref = fx
+        cdf = N / (pc * C)
+        cdf_total += cdf
+        ax.plot(fx, cdf, label=f"{nome}")
+
+    ax.plot(fx_ref, cdf_total, color='black', linestyle='--', linewidth=3, label='CDF Total')
+    ax.axhline(1, color='red', linestyle='--', label='Limite CDF = 1')
+    ax.set_title('Distribuição do CDF ao longo da largura da pista')
+    ax.set_xlabel('Posição lateral na pista (cm)')
+    ax.set_ylabel('CDF')
+    ax.grid(True)
+    ax.legend()
+    st.pyplot(fig)
