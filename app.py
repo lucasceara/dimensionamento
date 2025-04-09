@@ -1,5 +1,3 @@
-# app.py - versão para Streamlit
-
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
@@ -79,24 +77,6 @@ def calcular_cp(faixa_centro, weq, pos_pneus, wander_std):
          stats.norm.cdf(faixa_centro - weq/2, pneu_pos, wander_std))
         for pneu_pos in pos_pneus
     ])
-def obter_pc_por_faixa(aeronave_nome, h_total, dados_aeronaves, wander_std=77.3):
-    faixa_largura = 25.4
-    num_faixas = 81
-    faixas = np.linspace(-40 * faixa_largura, 40 * faixa_largura, num_faixas)
-    for aero in dados_aeronaves:
-        if aero['nome'] == aeronave_nome:
-            if aero['Ne'] == 1 or h_total >= aero['t'] - aero['w']:
-                weq = aero['w'] + aero['t'] + h_total if aero['Ne'] > 1 else aero['w'] + h_total
-                posicoes_pneus = [aero['xk_centro']]
-            else:
-                weq = aero['w'] + h_total
-                deslocamento = aero['t'] / 2
-                posicoes_pneus = [aero['xk_centro'] - deslocamento, aero['xk_centro'] + deslocamento]
-            posicoes_pneus_simetrico = posicoes_pneus + [-pos for pos in posicoes_pneus]
-            cp_values = np.array([calcular_cp(f, weq, posicoes_pneus_simetrico, wander_std) for f in faixas])
-            pc_values = 1 / cp_values
-            return faixas, pc_values
-    raise ValueError(f"Aeronave {aeronave_nome} não encontrada.")
 
 def obter_pc_por_faixa(aeronave_nome, h_total, dados_aeronaves, wander_std=77.3):
     faixa_largura = 25.4
@@ -116,6 +96,15 @@ def obter_pc_por_faixa(aeronave_nome, h_total, dados_aeronaves, wander_std=77.3)
             pc_values = 1 / cp_values
             return faixas, pc_values
     raise ValueError(f"Aeronave {aeronave_nome} não encontrada.")
+
+# === DADOS DAS AERONAVES ===
+dados_aeronaves_completos = [
+    {'nome': 'A-320',   'w': 31.5,   't': 92.69, 'xk_centro': 333.15, 'Ne': 2},
+    {'nome': 'A-321',   'w': 32.240, 't': 92.71, 'xk_centro': 379.5,  'Ne': 2},
+    {'nome': 'B-737',   'w': 30.062, 't': 86.36, 'xk_centro': 285.75, 'Ne': 2},
+    {'nome': 'EMB-195', 'w': 27.194, 't': 86.36, 'xk_centro': 297.18, 'Ne': 2},
+    {'nome': 'ATR-72',  'w': 21.035, 't': 43.60, 'xk_centro': 205.0,  'Ne': 2},
+]
 
 # === APP STREAMLIT ===
 st.title("Análise de CDF Multiaeronaves com Confiabilidade")
@@ -197,3 +186,4 @@ if st.button("Gerar gráfico CDF acumulado"):
     ax.grid(True)
     ax.legend()
     st.pyplot(fig)
+"""
