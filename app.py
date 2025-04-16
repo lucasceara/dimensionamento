@@ -176,3 +176,4 @@ if st.button("Gerar gráfico CDF acumulado"):
     ax.legend()
     st.pyplot(fig)
 
+
