@@ -53,9 +53,12 @@ def calcular_C(ev):
     if ev >= 1.765e-3:
         C = (0.00414131 / ev) ** 8.1
     else:
-        # Restaurar a fórmula original, com proteção contra valores inválidos
+        # Proteger contra valores pequenos no termo
         termo = max(-0.1638 + 185.19 * ev, 1e-6)
         log_C = termo ** (-0.60586)
+        # Limitar log_C para evitar overflow
+        log_C_max = 300  # Evita 10^log_C exceder o limite de float
+        log_C = min(log_C, log_C_max)
         C = 10 ** log_C
     
     # Definir limites para C
@@ -262,6 +265,6 @@ if st.button("Gerar gráfico CDF acumulado", type="primary"):
     ax.set_xlabel('Posição lateral na pista (cm)')
     ax.set_ylabel('CDF')
     ax.grid(True)
-    ax.legend = ax.legend(loc='best')
+    ax.legend(loc='best')
     plt.tight_layout()
     st.pyplot(fig)
