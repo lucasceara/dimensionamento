@@ -14,8 +14,7 @@ Este aplicativo utiliza uma **Rede Neural Artificial (RNA)** treinada para estim
 ---
 
 ### 🌡️ Correção de Temperatura no Revestimento
-A temperatura padrão para o MR é **25°C**. A correção térmica é feita pelo modelo **Austroads (2013)**:
-\( E_T = E_{25} \cdot e^{-0.08 \cdot (T - 25)} \)
+A temperatura padrão para o MR é **25°C**. A correção térmica é feita pelo modelo **Austroads (2013)**
 
 ---
 
