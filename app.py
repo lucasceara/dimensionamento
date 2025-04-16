@@ -58,6 +58,9 @@ def prever_deformacao_customizada(valores):
     entrada_norm = scaler.transform(entrada)
     return neural_network(weights, entrada_norm)[0, 0]
 
+def corrigir_mr_para_Tc(E25, Tc):
+    return E25 * np.exp(-0.08 * (Tc - 25))
+
 def calcular_confiabilidade_rosenblueth(media_inputs, covs, confianca):
     idx = {'revest_MR': 2, 'revest_h': 3, 'base_MR': 4, 'base_h': 5, 'subbase_MR': 6, 'subbase_h': 7, 'subleito_MR': 8}
     cov_values = [covs[k] / 100 for k in idx]
@@ -93,17 +96,16 @@ def obter_pc_por_faixa(xk_centro, w, t, Ne, h_total, std):
     cp = np.array([calcular_cp(fi, weq, pos, std) for fi in f])
     return f, 1 / cp
 
-# === DADOS DAS AERONAVES ===
+# === INTERFACE COMPLETA ===
 dados_aeronaves = [
-    {'nome': 'A-320',   'w': 31.5, 't': 92.69, 'xk_centro': 333.15, 'Ne': 2, 'pressao': 1.6, 'rodas': 1.4},
-    {'nome': 'A-321',   'w': 34.7, 't': 92.71, 'xk_centro': 379.5,  'Ne': 2, 'pressao': 1.6, 'rodas': 1.4},
-    {'nome': 'B-737',   'w': 32.3, 't': 86.36, 'xk_centro': 285.75, 'Ne': 2, 'pressao': 1.7, 'rodas': 1.5},
+    {'nome': 'A-320', 'w': 31.5, 't': 92.69, 'xk_centro': 333.15, 'Ne': 2, 'pressao': 1.6, 'rodas': 1.4},
+    {'nome': 'A-321', 'w': 34.7, 't': 92.71, 'xk_centro': 379.5, 'Ne': 2, 'pressao': 1.6, 'rodas': 1.4},
+    {'nome': 'B-737', 'w': 32.3, 't': 86.36, 'xk_centro': 285.75, 'Ne': 2, 'pressao': 1.7, 'rodas': 1.5},
     {'nome': 'EMB-195', 'w': 29.2, 't': 86.36, 'xk_centro': 297.18, 'Ne': 2, 'pressao': 1.5, 'rodas': 1.4},
-    {'nome': 'ATR-72',  'w': 22.6, 't': 43.60, 'xk_centro': 205.0,  'Ne': 2, 'pressao': 0.8, 'rodas': 1.2},
-    {'nome': 'CESSNA',  'w': 16.9, 't': 0.0,   'xk_centro': 208.28, 'Ne': 1, 'pressao': 0.5, 'rodas': 1.0},
+    {'nome': 'ATR-72', 'w': 22.6, 't': 43.60, 'xk_centro': 205.0, 'Ne': 2, 'pressao': 0.8, 'rodas': 1.2},
+    {'nome': 'CESSNA', 'w': 16.9, 't': 0.0, 'xk_centro': 208.28, 'Ne': 1, 'pressao': 0.5, 'rodas': 1.0},
 ]
 
-# === INTERFACE ===
 st.title("Predição de Deformações - Pavimentos Aeroportuários")
 
 Tc = st.number_input("Temperatura média anual (°C)", value=25.0)
@@ -117,7 +119,6 @@ subleito_MR = st.number_input("MR subleito (MPa)", value=60.0)
 vida_util = st.number_input("Vida útil (anos)", value=20.0)
 wander_std = st.number_input("Wander std (cm)", value=77.3)
 
-st.subheader("Coeficientes de Variação")
 cov_padrao = {'revest_MR': 15, 'base_MR': 20, 'subbase_MR': 20, 'subleito_MR': 20, 'revest_h': 7, 'base_h': 12, 'subbase_h': 15}
 covs = {k: st.number_input(f"COV {k} (%)", value=v) for k, v in cov_padrao.items()}
 confianca = st.number_input("Confiabilidade (%)", value=95.0)
@@ -159,11 +160,9 @@ if st.button("Gerar gráfico CDF acumulado"):
         cdf_total += cdf
 
         st.markdown(f"""**Aeronave: {aero['nome']}**
-
 - MR original: {revest_MR:.2f} MPa | Deformação: {ev_original:.6f} mm/mm  
 - MR corrigido: {entrada_corrigida[2]:.2f} MPa | Deformação: {ev_corrigida:.6f} mm/mm  
-- Deformação confiável ({confianca:.0f}%): {ev_conf:.6f} mm/mm
-""")
+- Deformação confiável ({confianca:.0f}%): {ev_conf:.6f} mm/mm""")
 
         ax.plot(fxi, cdf, label=aero['nome'])
 
@@ -175,5 +174,3 @@ if st.button("Gerar gráfico CDF acumulado"):
     ax.grid(True)
     ax.legend()
     st.pyplot(fig)
-
-
