@@ -97,7 +97,7 @@ st.title("Análise de Pavimento Aeroportuário")
 st.markdown("""
 Bem-vindo ao nosso programa! 🚀 Este aplicativo utiliza uma **Rede Neural Artificial (RNA)** para o dimensionamento de pavimentos aeroportuários. 🛫
 
-- **Análise Probabilística**: Os **Coeficientes de Variação (COV)** permitem considerar incertezas nas propriedades do pavimento. Insira valores de COV para realizar uma análise probabilística. 📊
+- **Análise Probabilística - Método de Rosenblueth (DER, 2024)**: Os **Coeficientes de Variação (COV)** permitem considerar incertezas nas propriedades do pavimento. Insira valores de COV para realizar uma análise probabilística. 📊
 - **Análise Determinística**: Se preferir uma análise sem incertezas, basta definir todos os COVs como **0**. ✅
 - **Correção de Temperatura**: Ajustamos o módulo de rigidez (MR) com base na temperatura média anual, seguindo as diretrizes do **Austroads (2013)**. 🌡️
 
