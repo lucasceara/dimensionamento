@@ -99,7 +99,7 @@ def obter_pc_por_faixa(aeronave, h_total, wander_std):
 st.title("Predição de Deformações em Pavimentos Aeroportuários com RNA")
 
 st.header("Dados do Pavimento")
-Tc = st.number_input("Temperatura média anual (°C)", value=27.0)
+Tc = st.number_input("Temperatura média anual (°C)", value=25.0)
 revest_MR = st.number_input("MR 25°C Revestimento (MPa)", value=2500.0)
 revest_h = st.number_input("Espessura do Revestimento (m)", value=0.3)
 base_MR = st.number_input("MR Base (MPa)", value=300.0)
@@ -153,7 +153,7 @@ for nome, props in aeronaves_dict.items():
         st.success(f"{nome} - Deformação confiável: {ev_conf:.6e} mm/mm")
 
 st.markdown("---")
-st.subheader("Distribuição Acumulada de Carga (CDF)")
+st.subheader("Distribuição de Dano Acumulado (CDF)")
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.plot(faixas_ref, cdf_total, label="CDF Total", color="black", linewidth=2)
 ax.axhline(1, color='red', linestyle='--', label="Limite CDF = 1")
