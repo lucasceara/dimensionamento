@@ -200,4 +200,68 @@ for nome in sorted(aeronaves_dict.keys()):
     aeronave_inputs[nome] = (dec, cres)
 
 # === EXECUÇÃO ===
-if st.button("Ger
+if st.button("Gerar gráfico CDF acumulado", type="primary"):
+    faixas = np.linspace(-40 * 25.4, 40 * 25.4, 81)
+    cdf_total = np.zeros_like(faixas)
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    _, Tc = calcular_temperaturas(temp_anual)
+    revest_E_corrigido = corrigir_mr_para_Tc(revest_E, Tc)
+    h_total_cm = (revest_h + base_h + subbase_h) * 100
+    fx_ref = None
+    valid_cdf_count = 0
+
+    for nome, (dec, cres) in aeronave_inputs.items():
+        if dec > 0:
+            entrada_original = [
+                aeronaves_dict[nome]['Pressão dos Pneus(MPa)'],
+                aeronaves_dict[nome]['dist_rodas(m)'],
+                revest_E, revest_h,
+                base_E, base_h,
+                subbase_E, subbase_h,
+                subleito_E
+            ]
+
+            entrada_corrigida = entrada_original.copy()
+            entrada_corrigida[2] = revest_E_corrigido
+
+            ev_original = prever_deformacao_customizada(entrada_original)
+            ev_corrigida = prever_deformacao_customizada(entrada_corrigida)
+            ev_media, ev_confiavel = calcular_confiabilidade_rosenblueth(nome, entrada_corrigida)
+
+            st.write(f"**Aeronave: {nome}**")
+            st.write(f"- MR original: {revest_E:.2f} MPa | Deformação: {ev_original:.6f} mm/mm")
+            st.write(f"- MR corrigido: {revest_E_corrigido:.2f} MPa | Deformação: {ev_corrigida:.6f} mm/mm")
+            st.write(f"- Deformação confiável ({nivel_confianca:.0f}%): {ev_confiavel:.6f} mm/mm")
+
+            C = calcular_C(ev_confiavel)
+            N = calcular_N(dec, cres, vida_util)
+            fx, pc = obter_pc_por_faixa(nome, h_total_cm, dados_aeronaves_completos, wander_std=wander_std)
+            if fx_ref is None:
+                fx_ref = fx
+            cdf = N / (pc * C)
+
+            # Verificar se cdf é válido antes de somar
+            if np.all(np.isfinite(cdf)) and not np.any(np.isnan(cdf)) and np.all(cdf >= 0):
+                cdf_total += cdf
+                valid_cdf_count += 1
+                ax.plot(fx, cdf, label=f"{nome}")
+                st.write(f"✅ CDF para {nome} incluído na soma do CDF Total (máximo: {cdf.max():.2e}).")
+            else:
+                st.warning(f"⚠️ CDF para {nome} contém valores inválidos ou negativos (máximo: {cdf.max():.2e}, mínimo: {cdf.min():.2e}). Ignorado na soma do CDF Total.")
+
+    # Plotar cdf_total se houver valores válidos
+    if np.any(cdf_total > 0):
+        ax.plot(fx_ref, cdf_total, color='black', linestyle='--', linewidth=3, label='CDF Total (soma)')
+        st.write(f"✅ CDF Total calculado com {valid_cdf_count} aeronave(s) válida(s). Máximo: {cdf_total.max():.2e}")
+    else:
+        st.error("🚨 Nenhum CDF válido foi calculado para o CDF Total. Tente ajustar os valores de entrada, como reduzir os módulos de rigidez ou aumentar o número de decolagens.")
+
+    ax.axhline(1, color='red', linestyle='--', label='Limite CDF = 1')
+    ax.set_title('Distribuição do CDF ao longo da largura da pista')
+    ax.set_xlabel('Posição lateral na pista (cm)')
+    ax.set_ylabel('CDF')
+    ax.grid(True)
+    ax.legend = ax.legend(loc='best')
+    plt.tight_layout()
+    st.pyplot(fig)
