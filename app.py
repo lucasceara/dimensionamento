@@ -6,6 +6,7 @@ import joblib
 from sklearn.preprocessing import MinMaxScaler
 from scipy import stats
 import itertools
+import texto_explicativo_streamlit  # Mostra os textos informativos no app
 
 # === CARREGAR MODELO ===
 modelo = joblib.load('modelo_4_camadas_ESRS_ESRD_COMPLETO.pkl')
