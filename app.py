@@ -198,10 +198,10 @@ for aeronave in dados_aeronaves_completos:
         faixas, pc = obter_pc_por_faixa(nome, (revest_h + base_h + subbase_h) * 100, wander_std)
         cdf = N / (pc * C)
         cdf_total += cdf
-        st.success(f"{nome} - Deformação confiável: {ev_conf:.6e} mm/mm")
+        st.success(f"{nome} - Deformação: {ev_conf:.6e} mm/mm")
 
 st.markdown("---")
-st.subheader("Distribuição Acumulada de Carga (CDF)")
+st.subheader("Distribuição do Dano Acumulado (CDF)")
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.plot(faixas_ref, cdf_total, label="CDF Total", color="black", linewidth=2)
 ax.axhline(1, color='red', linestyle='--', label="Limite CDF = 1")
