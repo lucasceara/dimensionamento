@@ -1,7 +1,8 @@
-streamlit
 numpy
-pandas
-scikit-learn
-scipy
 matplotlib
+pandas
 joblib
+scikit-learn
+ipywidgets
+voila
+scipy
