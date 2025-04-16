@@ -99,7 +99,7 @@ def obter_pc(xk, w, t, Ne, h_total, std):
 
 st.title("Predição de Deformações - Pavimentos Aeroportuários")
 
-Tc = st.number_input("Temperatura média anual (°C)", value=27.0)
+Tc = st.number_input("Temperatura média anual (°C)", value=25.0)
 revest_MR = st.number_input("MR 25°C (MPa)", value=2500.0)
 revest_h = st.number_input("h revest. (m)", value=0.3)
 base_MR = st.number_input("MR base (MPa)", value=300.0)
