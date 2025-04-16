@@ -19,13 +19,7 @@ Este aplicativo utiliza uma **Rede Neural Artificial (RNA)** treinada para estim
 
 A **temperatura padrão considerada para os módulos de resiliência (MR)** dos revestimentos asfálticos é de **25°C**.
 
-Para ajustar o MR ao clima local, é utilizada a seguinte **equação do método Austroads (2013)**:
-
-> \( E_T = E_{25} \cdot e^{-0.08 \cdot (T - 25)} \)
-
-Onde:
-- \( E_T \) = módulo ajustado para temperatura média anual \( T \)
-- \( E_{25} \) = módulo a 25°C
+Para ajustar o MR ao clima local, é utilizada a seguinte **equação do método Austroads (2013)**
 
 ---
 
